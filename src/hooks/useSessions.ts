@@ -11,7 +11,7 @@ export function useSessions() {
   });
 
   useEffect(() => {
-    electronAPI.onSessionUpdate((updatedSession) => {
+    const cleanup = electronAPI.onSessionUpdate((updatedSession) => {
       queryClient.setQueryData(['sessions'], (old: unknown[] | undefined) => {
         if (!old) return [updatedSession];
         const index = old.findIndex((s: any) => s.id === updatedSession.id);
@@ -23,6 +23,8 @@ export function useSessions() {
         return [updatedSession, ...old];
       });
     });
+
+    return cleanup;
   }, [queryClient]);
 
   return query;

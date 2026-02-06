@@ -7,7 +7,9 @@ contextBridge.exposeInMainWorld('electronAPI', {
 
   // File watching
   onSessionUpdate: (callback: (data: unknown) => void) => {
-    ipcRenderer.on('session-update', (_event, data) => callback(data));
+    const listener = (_event: any, data: unknown) => callback(data);
+    ipcRenderer.on('session-update', listener);
+    return () => ipcRenderer.removeListener('session-update', listener);
   },
 
   // Chat

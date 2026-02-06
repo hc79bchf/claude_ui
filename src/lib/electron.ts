@@ -17,7 +17,7 @@ declare global {
     electronAPI: {
       getSessions: () => Promise<ParsedSession[]>;
       getSession: (id: string) => Promise<{ session: ParsedSession; messages: unknown[] } | null>;
-      onSessionUpdate: (callback: (data: ParsedSession) => void) => void;
+      onSessionUpdate: (callback: (data: ParsedSession) => void) => () => void;
       getMcpServers: () => Promise<McpServer[]>;
       toggleMcpServer: (id: string, enabled: boolean) => Promise<{ success: boolean; error?: string }>;
       getSkills: () => Promise<Skill[]>;

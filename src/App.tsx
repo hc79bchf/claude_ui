@@ -3,6 +3,7 @@ import { Layout } from './components/layout/Layout';
 import { View } from './components/layout/NavRail';
 import { SessionsView } from './components/sessions/SessionsView';
 import { ChatView } from './components/chat/ChatView';
+import { ToolsView } from './components/tools/ToolsView';
 
 const queryClient = new QueryClient();
 
@@ -13,7 +14,7 @@ function MainContent({ view }: { view: View }) {
     case 'chat':
       return <ChatView />;
     case 'tools':
-      return <PlaceholderView name="Tools" />;
+      return <ToolsView />;
     case 'skills':
       return <PlaceholderView name="Skills" />;
     case 'stats':

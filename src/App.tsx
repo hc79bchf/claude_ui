@@ -5,6 +5,7 @@ import { SessionsView } from './components/sessions/SessionsView';
 import { ChatView } from './components/chat/ChatView';
 import { ToolsView } from './components/tools/ToolsView';
 import { SkillsView } from './components/skills/SkillsView';
+import { StatsView } from './components/stats/StatsView';
 
 const queryClient = new QueryClient();
 
@@ -19,7 +20,7 @@ function MainContent({ view }: { view: View }) {
     case 'skills':
       return <SkillsView />;
     case 'stats':
-      return <PlaceholderView name="Stats" />;
+      return <StatsView />;
     default:
       return <PlaceholderView name="Unknown" />;
   }

@@ -16,6 +16,10 @@ contextBridge.exposeInMainWorld('electronAPI', {
   onChatResponse: (callback: (data: unknown) => void) => {
     ipcRenderer.on('chat-response', (_event, data) => callback(data));
   },
+  onChatExit: (callback: (code: number) => void) => {
+    ipcRenderer.on('chat-exit', (_event, code) => callback(code));
+  },
+  stopChat: () => ipcRenderer.invoke('stop-chat'),
 
   // MCP & Skills
   getMcpServers: () => ipcRenderer.invoke('get-mcp-servers'),

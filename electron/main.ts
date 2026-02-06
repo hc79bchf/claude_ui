@@ -4,10 +4,12 @@ import * as fs from 'fs';
 import { glob } from 'glob';
 import { FileWatcher } from './services/FileWatcher';
 import { SessionParser } from './services/SessionParser';
+import { ChatService, ChatEvent } from './services/ChatService';
 
 let mainWindow: BrowserWindow | null = null;
 const fileWatcher = new FileWatcher();
 const sessionParser = new SessionParser();
+let chatService: ChatService | null = null;
 
 function createWindow() {
   mainWindow = new BrowserWindow({
@@ -68,6 +70,44 @@ ipcMain.handle('get-session', async (_event, sessionId: string) => {
   return null;
 });
 
+ipcMain.handle('start-chat', async (_event, projectPath: string, sessionId?: string) => {
+  if (chatService) {
+    chatService.stop();
+  }
+
+  chatService = new ChatService(projectPath);
+
+  chatService.on('event', (event: ChatEvent) => {
+    if (mainWindow) {
+      mainWindow.webContents.send('chat-response', event);
+    }
+  });
+
+  chatService.on('exit', (code) => {
+    if (mainWindow) {
+      mainWindow.webContents.send('chat-exit', code);
+    }
+    chatService = null;
+  });
+
+  await chatService.start(sessionId);
+  return { success: true };
+});
+
+ipcMain.handle('send-message', async (_event, message: string) => {
+  if (!chatService?.isRunning()) {
+    return { success: false, error: 'Chat not started' };
+  }
+  chatService.send(message);
+  return { success: true };
+});
+
+ipcMain.handle('stop-chat', async () => {
+  chatService?.stop();
+  chatService = null;
+  return { success: true };
+});
+
 app.whenReady().then(() => {
   createWindow();
   fileWatcher.start();
@@ -82,6 +122,7 @@ app.whenReady().then(() => {
 
 app.on('window-all-closed', () => {
   fileWatcher.stop();
+  chatService?.stop();
   if (process.platform !== 'darwin') {
     app.quit();
   }

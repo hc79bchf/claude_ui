@@ -5,10 +5,12 @@ import { glob } from 'glob';
 import { FileWatcher } from './services/FileWatcher';
 import { SessionParser } from './services/SessionParser';
 import { ChatService, ChatEvent } from './services/ChatService';
+import { McpConfigService } from './services/McpConfigService';
 
 let mainWindow: BrowserWindow | null = null;
 const fileWatcher = new FileWatcher();
 const sessionParser = new SessionParser();
+const mcpConfigService = new McpConfigService();
 let chatService: ChatService | null = null;
 
 function createWindow() {
@@ -105,6 +107,16 @@ ipcMain.handle('send-message', async (_event, message: string) => {
 ipcMain.handle('stop-chat', async () => {
   chatService?.stop();
   chatService = null;
+  return { success: true };
+});
+
+// MCP Server handlers
+ipcMain.handle('get-mcp-servers', async () => {
+  return mcpConfigService.getMcpServers();
+});
+
+ipcMain.handle('toggle-mcp-server', async (_event, serverId: string, enabled: boolean) => {
+  await mcpConfigService.toggleMcpServer(serverId, enabled);
   return { success: true };
 });
 

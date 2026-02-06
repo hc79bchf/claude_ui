@@ -43,7 +43,10 @@ export function StatsView() {
   if (isLoading) {
     return (
       <div className="h-full flex items-center justify-center">
-        <p className="text-gray-400">Loading stats...</p>
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-orange-500 mx-auto mb-4"></div>
+          <p className="text-gray-400">Loading stats...</p>
+        </div>
       </div>
     );
   }
@@ -51,7 +54,13 @@ export function StatsView() {
   if (error) {
     return (
       <div className="h-full flex items-center justify-center">
-        <p className="text-red-400">Error loading stats</p>
+        <div className="text-center">
+          <div className="text-red-500 text-3xl mb-2">⚠</div>
+          <p className="text-red-400">Error loading stats</p>
+          <p className="text-sm text-gray-500 mt-1">
+            {error instanceof Error ? error.message : 'Unknown error occurred'}
+          </p>
+        </div>
       </div>
     );
   }
@@ -59,7 +68,13 @@ export function StatsView() {
   if (!stats) {
     return (
       <div className="h-full flex items-center justify-center">
-        <p className="text-gray-400">No stats available</p>
+        <div className="text-center">
+          <div className="text-gray-600 text-3xl mb-2">📊</div>
+          <p className="text-gray-400">No stats available</p>
+          <p className="text-sm text-gray-500 mt-1">
+            Start using Claude to see your usage statistics
+          </p>
+        </div>
       </div>
     );
   }

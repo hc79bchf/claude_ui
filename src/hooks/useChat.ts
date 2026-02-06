@@ -48,7 +48,7 @@ interface UseChatReturn {
 }
 
 function generateId(): string {
-  return `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+  return `${Date.now()}-${Math.random().toString(36).substring(2, 11)}`;
 }
 
 export function useChat(): UseChatReturn {
@@ -215,11 +215,12 @@ export function useChat(): UseChatReturn {
       }
     };
 
-    electronAPI.onChatResponse(handleChatResponse);
-    electronAPI.onChatExit(handleChatExit);
-
-    // Cleanup is not needed since Electron IPC listeners persist
-    // and we want to keep receiving events
+    const cleanup1 = electronAPI.onChatResponse(handleChatResponse);
+    const cleanup2 = electronAPI.onChatExit(handleChatExit);
+    return () => {
+      cleanup1();
+      cleanup2();
+    };
   }, []);
 
   const startChat = useCallback(async (projectPath: string) => {

@@ -14,10 +14,14 @@ contextBridge.exposeInMainWorld('electronAPI', {
   startChat: (projectPath: string) => ipcRenderer.invoke('start-chat', projectPath),
   sendMessage: (message: string) => ipcRenderer.invoke('send-message', message),
   onChatResponse: (callback: (data: unknown) => void) => {
-    ipcRenderer.on('chat-response', (_event, data) => callback(data));
+    const listener = (_event: any, data: unknown) => callback(data);
+    ipcRenderer.on('chat-response', listener);
+    return () => ipcRenderer.removeListener('chat-response', listener);
   },
   onChatExit: (callback: (code: number) => void) => {
-    ipcRenderer.on('chat-exit', (_event, code) => callback(code));
+    const listener = (_event: any, code: number) => callback(code);
+    ipcRenderer.on('chat-exit', listener);
+    return () => ipcRenderer.removeListener('chat-exit', listener);
   },
   stopChat: () => ipcRenderer.invoke('stop-chat'),
 

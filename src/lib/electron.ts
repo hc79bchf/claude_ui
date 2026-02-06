@@ -21,8 +21,8 @@ declare global {
       getStats: (period: string) => Promise<unknown>;
       startChat: (projectPath: string) => Promise<void>;
       sendMessage: (message: string) => Promise<void>;
-      onChatResponse: (callback: (data: ChatEvent) => void) => void;
-      onChatExit: (callback: (code: number) => void) => void;
+      onChatResponse: (callback: (data: ChatEvent) => void) => () => void;
+      onChatExit: (callback: (code: number) => void) => () => void;
       stopChat: () => Promise<void>;
     };
   }

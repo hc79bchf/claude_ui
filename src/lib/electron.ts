@@ -17,7 +17,7 @@ declare global {
       getSession: (id: string) => Promise<{ session: ParsedSession; messages: unknown[] } | null>;
       onSessionUpdate: (callback: (data: ParsedSession) => void) => void;
       getMcpServers: () => Promise<McpServer[]>;
-      toggleMcpServer: (id: string, enabled: boolean) => Promise<{ success: boolean }>;
+      toggleMcpServer: (id: string, enabled: boolean) => Promise<{ success: boolean; error?: string }>;
       getSkills: () => Promise<unknown[]>;
       getStats: (period: string) => Promise<unknown>;
       startChat: (projectPath: string) => Promise<void>;

@@ -116,8 +116,13 @@ ipcMain.handle('get-mcp-servers', async () => {
 });
 
 ipcMain.handle('toggle-mcp-server', async (_event, serverId: string, enabled: boolean) => {
-  await mcpConfigService.toggleMcpServer(serverId, enabled);
-  return { success: true };
+  try {
+    await mcpConfigService.toggleMcpServer(serverId, enabled);
+    return { success: true };
+  } catch (error) {
+    console.error('Failed to toggle MCP server:', error);
+    return { success: false, error: (error as Error).message };
+  }
 });
 
 app.whenReady().then(() => {

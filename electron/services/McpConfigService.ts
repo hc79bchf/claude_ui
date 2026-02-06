@@ -40,13 +40,30 @@ export class McpConfigService {
       settings.disabledMcpServers = [];
     }
 
-    const disabledIndex = settings.disabledMcpServers.indexOf(serverId);
+    // Find the server to get its name
+    const servers = await this.getMcpServers();
+    const server = servers.find(s => s.id === serverId);
+    const serverName = server?.name;
 
-    if (enabled && disabledIndex !== -1) {
-      // Remove from disabled list to enable
-      settings.disabledMcpServers.splice(disabledIndex, 1);
-    } else if (!enabled && disabledIndex === -1) {
-      // Add to disabled list to disable
+    const disabledIndex = settings.disabledMcpServers.indexOf(serverId);
+    const disabledByNameIndex = serverName
+      ? settings.disabledMcpServers.indexOf(serverName)
+      : -1;
+
+    if (enabled) {
+      // Remove both ID and name from disabled list
+      if (disabledIndex !== -1) {
+        settings.disabledMcpServers.splice(disabledIndex, 1);
+      }
+      if (disabledByNameIndex !== -1) {
+        // Recalculate index after possible splice above
+        const nameIdx = settings.disabledMcpServers.indexOf(serverName!);
+        if (nameIdx !== -1) {
+          settings.disabledMcpServers.splice(nameIdx, 1);
+        }
+      }
+    } else if (!enabled && disabledIndex === -1 && disabledByNameIndex === -1) {
+      // Add to disabled list to disable (only if not already disabled by ID or name)
       settings.disabledMcpServers.push(serverId);
     }
 

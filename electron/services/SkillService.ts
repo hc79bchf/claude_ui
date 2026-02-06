@@ -1,4 +1,4 @@
-import * as fs from 'fs';
+import { promises as fsp, existsSync } from 'fs';
 import * as path from 'path';
 import * as os from 'os';
 import { glob } from 'glob';
@@ -71,7 +71,7 @@ export class SkillService {
   private async discoverSkills(): Promise<Omit<Skill, 'usageCount' | 'lastUsedAt'>[]> {
     const skills: Omit<Skill, 'usageCount' | 'lastUsedAt'>[] = [];
 
-    if (!fs.existsSync(this.pluginCacheDir)) {
+    if (!existsSync(this.pluginCacheDir)) {
       return skills;
     }
 
@@ -94,7 +94,8 @@ export class SkillService {
       // Discover superpowers skills
       const superpowersDirs = await glob(superpowersPattern, { nodir: false });
       for (const skillDir of superpowersDirs) {
-        if (fs.statSync(skillDir).isDirectory()) {
+        const stat = await fsp.stat(skillDir);
+        if (stat.isDirectory()) {
           const skill = await this.parseSkillFromDirectory(skillDir, 'superpowers');
           if (skill) {
             skills.push(skill);
@@ -110,7 +111,8 @@ export class SkillService {
           continue;
         }
 
-        if (fs.statSync(skillDir).isDirectory()) {
+        const stat = await fsp.stat(skillDir);
+        if (stat.isDirectory()) {
           const pluginName = this.extractPluginName(skillDir);
           const skill = await this.parseSkillFromDirectory(skillDir, pluginName);
           if (skill) {
@@ -143,7 +145,7 @@ export class SkillService {
 
       let skillFile: string | null = null;
       for (const file of possibleFiles) {
-        if (fs.existsSync(file)) {
+        if (existsSync(file)) {
           skillFile = file;
           break;
         }
@@ -170,7 +172,7 @@ export class SkillService {
       }
 
       // Parse the markdown file
-      const content = fs.readFileSync(skillFile, 'utf-8');
+      const content = await fsp.readFile(skillFile, 'utf-8');
       const frontmatter = this.parseFrontmatter(content);
 
       return {
@@ -296,7 +298,7 @@ export class SkillService {
     this.skillUsageCache.clear();
 
     const projectsDir = path.join(this.claudeDir, 'projects');
-    if (!fs.existsSync(projectsDir)) {
+    if (!existsSync(projectsDir)) {
       this.usageCacheTimestamp = now;
       return;
     }
@@ -320,7 +322,7 @@ export class SkillService {
    */
   private async parseSessionFileForSkillUsage(filePath: string): Promise<void> {
     try {
-      const content = fs.readFileSync(filePath, 'utf-8');
+      const content = await fsp.readFile(filePath, 'utf-8');
       const lines = content.trim().split('\n').filter(Boolean);
 
       for (const line of lines) {
@@ -335,6 +337,9 @@ export class SkillService {
                 if (input.skill) {
                   const skillId = this.normalizeSkillId(input.skill);
                   const timestamp = new Date(msg.timestamp);
+                  if (isNaN(timestamp.getTime())) {
+                    continue; // Skip invalid timestamps
+                  }
 
                   const existing = this.skillUsageCache.get(skillId);
                   if (existing) {

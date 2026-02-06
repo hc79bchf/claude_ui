@@ -7,12 +7,14 @@ import { SessionParser } from './services/SessionParser';
 import { ChatService, ChatEvent } from './services/ChatService';
 import { McpConfigService } from './services/McpConfigService';
 import { SkillService } from './services/SkillService';
+import { CostService, TimePeriod } from './services/CostService';
 
 let mainWindow: BrowserWindow | null = null;
 const fileWatcher = new FileWatcher();
 const sessionParser = new SessionParser();
 const mcpConfigService = new McpConfigService();
 const skillService = new SkillService();
+const costService = new CostService();
 let chatService: ChatService | null = null;
 
 function createWindow() {
@@ -134,6 +136,46 @@ ipcMain.handle('get-skills', async () => {
   } catch (error) {
     console.error('Failed to get skills:', error);
     return [];
+  }
+});
+
+// Stats handler
+ipcMain.handle('get-stats', async (_event, period: string) => {
+  try {
+    const claudeDir = fileWatcher.getClaudeDir();
+    const projectsDir = path.join(claudeDir, 'projects');
+
+    if (!fs.existsSync(projectsDir)) {
+      return {
+        totalCost: 0,
+        totalTokens: 0,
+        sessionCount: 0,
+        byModel: {},
+        byProject: [],
+        byDay: [],
+      };
+    }
+
+    const files = await glob(path.join(projectsDir, '**/*.jsonl'));
+    const sessions = files
+      .map(file => sessionParser.parseSessionFile(file))
+      .filter((session): session is NonNullable<typeof session> => session !== null);
+
+    const validPeriod = ['today', 'week', 'month', 'all'].includes(period)
+      ? (period as TimePeriod)
+      : 'all';
+
+    return costService.aggregateStats(sessions, validPeriod);
+  } catch (error) {
+    console.error('Failed to get stats:', error);
+    return {
+      totalCost: 0,
+      totalTokens: 0,
+      sessionCount: 0,
+      byModel: {},
+      byProject: [],
+      byDay: [],
+    };
   }
 });
 

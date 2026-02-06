@@ -1,6 +1,7 @@
 import type { ParsedSession } from '../../electron/services/types';
 import type { McpServer } from '../types/mcp';
 import type { Skill } from '../types/skill';
+import type { UsageStats } from '../types';
 
 export interface ChatEvent {
   type: 'text' | 'tool_use' | 'tool_result' | 'thinking' | 'done' | 'error';
@@ -20,7 +21,7 @@ declare global {
       getMcpServers: () => Promise<McpServer[]>;
       toggleMcpServer: (id: string, enabled: boolean) => Promise<{ success: boolean; error?: string }>;
       getSkills: () => Promise<Skill[]>;
-      getStats: (period: string) => Promise<unknown>;
+      getStats: (period: 'today' | 'week' | 'month' | 'all') => Promise<UsageStats>;
       startChat: (projectPath: string) => Promise<void>;
       sendMessage: (message: string) => Promise<void>;
       onChatResponse: (callback: (data: ChatEvent) => void) => () => void;

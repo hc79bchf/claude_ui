@@ -1,12 +1,15 @@
 {
-  "name": "claude_ui",
-  "version": "1.0.0",
-  "description": "",
-  "main": "index.js",
-  "directories": {
-    "doc": "docs"
-  },
+  "name": "claude-dashboard",
+  "version": "0.1.0",
+  "description": "Claude Dashboard - Electron desktop app for Claude Code sessions",
+  "main": "dist-electron/main.js",
   "scripts": {
+    "dev": "concurrently \"npm run dev:vite\" \"npm run dev:electron\"",
+    "dev:vite": "vite",
+    "dev:electron": "wait-on http://localhost:5173 && NODE_ENV=development electron .",
+    "build": "tsc -p tsconfig.node.json && vite build",
+    "build:electron": "npm run build && electron-builder",
+    "preview": "vite preview",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "repository": {
@@ -16,9 +19,23 @@
   "keywords": [],
   "author": "",
   "license": "ISC",
-  "type": "commonjs",
   "bugs": {
     "url": "https://github.com/hc79bchf/claude_ui/issues"
   },
-  "homepage": "https://github.com/hc79bchf/claude_ui#readme"
+  "homepage": "https://github.com/hc79bchf/claude_ui#readme",
+  "dependencies": {
+    "react": "^19.2.4",
+    "react-dom": "^19.2.4"
+  },
+  "devDependencies": {
+    "@types/react": "^19.2.13",
+    "@types/react-dom": "^19.2.3",
+    "@vitejs/plugin-react": "^5.1.3",
+    "concurrently": "^9.2.1",
+    "electron": "^40.2.1",
+    "electron-builder": "^26.7.0",
+    "typescript": "^5.9.3",
+    "vite": "^7.3.1",
+    "wait-on": "^9.0.3"
+  }
 }

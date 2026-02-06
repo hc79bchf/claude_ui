@@ -32,6 +32,17 @@ const MODEL_PRICING: Record<string, ModelPricing> = {
     outputPerMillion: 15,
     cacheHitDiscount: 0.9,
   },
+  // Haiku models
+  'claude-haiku-3-20240307': {
+    inputPerMillion: 0.25,
+    outputPerMillion: 1.25,
+    cacheHitDiscount: 0.9,
+  },
+  'claude-haiku-3.5': {
+    inputPerMillion: 0.80,
+    outputPerMillion: 4.00,
+    cacheHitDiscount: 0.9,
+  },
 };
 
 // Default pricing for unknown models (use Sonnet pricing as fallback)
@@ -71,7 +82,7 @@ export class CostService {
     const { input, output, cacheRead } = session.tokenUsage;
 
     // Regular input tokens (excluding cache reads)
-    const regularInputTokens = input - cacheRead;
+    const regularInputTokens = Math.max(0, input - cacheRead);
 
     // Calculate costs
     const regularInputCost = (regularInputTokens / 1_000_000) * pricing.inputPerMillion;
@@ -96,7 +107,7 @@ export class CostService {
         cutoffDate = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
         break;
       case 'month':
-        cutoffDate = new Date(now.getFullYear(), now.getMonth() - 1, now.getDate());
+        cutoffDate = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
         break;
       case 'all':
       default:

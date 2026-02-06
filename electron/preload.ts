@@ -31,5 +31,5 @@ contextBridge.exposeInMainWorld('electronAPI', {
   getSkills: () => ipcRenderer.invoke('get-skills'),
 
   // Stats
-  getStats: (period: string) => ipcRenderer.invoke('get-stats', period),
+  getStats: (period: 'today' | 'week' | 'month' | 'all') => ipcRenderer.invoke('get-stats', period),
 });

@@ -24,6 +24,8 @@
   },
   "homepage": "https://github.com/hc79bchf/claude_ui#readme",
   "dependencies": {
+    "chokidar": "^5.0.0",
+    "glob": "^13.0.1",
     "react": "^19.2.4",
     "react-dom": "^19.2.4"
   },

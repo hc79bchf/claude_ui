@@ -2,6 +2,7 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { Layout } from './components/layout/Layout';
 import { View } from './components/layout/NavRail';
 import { SessionsView } from './components/sessions/SessionsView';
+import { ChatView } from './components/chat/ChatView';
 
 const queryClient = new QueryClient();
 
@@ -10,7 +11,7 @@ function MainContent({ view }: { view: View }) {
     case 'sessions':
       return <SessionsView />;
     case 'chat':
-      return <PlaceholderView name="Chat" />;
+      return <ChatView />;
     case 'tools':
       return <PlaceholderView name="Tools" />;
     case 'skills':

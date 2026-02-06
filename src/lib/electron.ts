@@ -1,5 +1,14 @@
 import type { ParsedSession } from '../../electron/services/types';
 
+export interface ChatEvent {
+  type: 'text' | 'tool_use' | 'tool_result' | 'thinking' | 'done' | 'error';
+  content?: string;
+  toolName?: string;
+  toolInput?: object;
+  toolOutput?: string;
+  isError?: boolean;
+}
+
 declare global {
   interface Window {
     electronAPI: {
@@ -12,7 +21,9 @@ declare global {
       getStats: (period: string) => Promise<unknown>;
       startChat: (projectPath: string) => Promise<void>;
       sendMessage: (message: string) => Promise<void>;
-      onChatResponse: (callback: (data: unknown) => void) => void;
+      onChatResponse: (callback: (data: ChatEvent) => void) => void;
+      onChatExit: (callback: (code: number) => void) => void;
+      stopChat: () => Promise<void>;
     };
   }
 }

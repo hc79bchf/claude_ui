@@ -1,8 +1,13 @@
+import { useCallback } from 'react';
 import { useMcpServers } from '../../hooks/useMcpServers';
 import { McpServerCard } from './McpServerCard';
 
 export function ToolsView() {
-  const { servers, isLoading, error, toggleServer, isToggling } = useMcpServers();
+  const { servers, isLoading, error, toggleServer, togglingId, toggleError, clearToggleError } = useMcpServers();
+
+  const handleToggle = useCallback((id: string, enabled: boolean) => {
+    toggleServer({ id, enabled });
+  }, [toggleServer]);
 
   if (isLoading) {
     return (
@@ -107,6 +112,13 @@ export function ToolsView() {
         </p>
       </div>
 
+      {toggleError && (
+        <div className="mb-4 p-3 bg-red-900/30 border border-red-700 rounded-lg flex items-center justify-between">
+          <span className="text-red-400">{toggleError}</span>
+          <button onClick={clearToggleError} className="text-red-400 hover:text-red-300">x</button>
+        </div>
+      )}
+
       {/* Stats summary */}
       <div className="mb-6 flex gap-4 text-sm">
         <div className="px-3 py-2 bg-gray-800 rounded-lg">
@@ -138,8 +150,8 @@ export function ToolsView() {
               <McpServerCard
                 key={server.id}
                 server={server}
-                onToggle={toggleServer}
-                isToggling={isToggling}
+                onToggle={handleToggle}
+                isToggling={togglingId === server.id}
               />
             ))}
           </div>
@@ -157,8 +169,8 @@ export function ToolsView() {
               <McpServerCard
                 key={server.id}
                 server={server}
-                onToggle={toggleServer}
-                isToggling={isToggling}
+                onToggle={handleToggle}
+                isToggling={togglingId === server.id}
               />
             ))}
           </div>

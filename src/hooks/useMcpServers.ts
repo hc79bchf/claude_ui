@@ -1,9 +1,12 @@
+import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { electronAPI } from '../lib/electron';
 import type { McpServer } from '../types/mcp';
 
 export function useMcpServers() {
   const queryClient = useQueryClient();
+  const [toggleError, setToggleError] = useState<string | null>(null);
+  const [togglingId, setTogglingId] = useState<string | null>(null);
 
   const query = useQuery({
     queryKey: ['mcp-servers'],
@@ -19,6 +22,9 @@ export function useMcpServers() {
       return { id, enabled };
     },
     onMutate: async ({ id, enabled }) => {
+      setToggleError(null); // Clear any previous error
+      setTogglingId(id);
+
       // Cancel any outgoing refetches
       await queryClient.cancelQueries({ queryKey: ['mcp-servers'] });
 
@@ -36,15 +42,18 @@ export function useMcpServers() {
       // Return a context object with the snapshotted value
       return { previousServers };
     },
-    onError: (_err, _variables, context) => {
+    onError: (err, _variables, context) => {
       // If the mutation fails, roll back to the previous value
       if (context?.previousServers) {
         queryClient.setQueryData(['mcp-servers'], context.previousServers);
       }
+      setToggleError((err as Error).message || 'Failed to toggle server');
+      setTogglingId(null);
     },
     onSettled: () => {
       // Always refetch after error or success to ensure sync
       queryClient.invalidateQueries({ queryKey: ['mcp-servers'] });
+      setTogglingId(null);
     },
   });
 
@@ -53,6 +62,8 @@ export function useMcpServers() {
     isLoading: query.isLoading,
     error: query.error,
     toggleServer: toggleMutation.mutate,
-    isToggling: toggleMutation.isPending,
+    togglingId,
+    toggleError,
+    clearToggleError: () => setToggleError(null),
   };
 }

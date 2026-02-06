@@ -6,11 +6,13 @@ import { FileWatcher } from './services/FileWatcher';
 import { SessionParser } from './services/SessionParser';
 import { ChatService, ChatEvent } from './services/ChatService';
 import { McpConfigService } from './services/McpConfigService';
+import { SkillService } from './services/SkillService';
 
 let mainWindow: BrowserWindow | null = null;
 const fileWatcher = new FileWatcher();
 const sessionParser = new SessionParser();
 const mcpConfigService = new McpConfigService();
+const skillService = new SkillService();
 let chatService: ChatService | null = null;
 
 function createWindow() {
@@ -122,6 +124,16 @@ ipcMain.handle('toggle-mcp-server', async (_event, serverId: string, enabled: bo
   } catch (error) {
     console.error('Failed to toggle MCP server:', error);
     return { success: false, error: (error as Error).message };
+  }
+});
+
+// Skills handler
+ipcMain.handle('get-skills', async () => {
+  try {
+    return await skillService.getSkills();
+  } catch (error) {
+    console.error('Failed to get skills:', error);
+    return [];
   }
 });
 

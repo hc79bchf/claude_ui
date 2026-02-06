@@ -4,6 +4,7 @@ import { View } from './components/layout/NavRail';
 import { SessionsView } from './components/sessions/SessionsView';
 import { ChatView } from './components/chat/ChatView';
 import { ToolsView } from './components/tools/ToolsView';
+import { SkillsView } from './components/skills/SkillsView';
 
 const queryClient = new QueryClient();
 
@@ -16,7 +17,7 @@ function MainContent({ view }: { view: View }) {
     case 'tools':
       return <ToolsView />;
     case 'skills':
-      return <PlaceholderView name="Skills" />;
+      return <SkillsView />;
     case 'stats':
       return <PlaceholderView name="Stats" />;
     default:

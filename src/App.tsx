@@ -1,9 +1,20 @@
+import { Layout } from './components/layout/Layout';
+import { View } from './components/layout/NavRail';
+
+function MainContent({ view }: { view: View }) {
+  return (
+    <div className="h-full flex items-center justify-center text-gray-400">
+      <p className="text-lg">
+        {view.charAt(0).toUpperCase() + view.slice(1)} View
+      </p>
+    </div>
+  );
+}
+
 export default function App() {
   return (
-    <div className="h-screen bg-gray-900 text-white flex items-center justify-center">
-      <div className="bg-blue-600 px-4 py-2 rounded-lg">
-        Claude Dashboard
-      </div>
-    </div>
+    <Layout>
+      {(view) => <MainContent view={view} />}
+    </Layout>
   );
 }

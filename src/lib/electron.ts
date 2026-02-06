@@ -12,23 +12,51 @@ export interface ChatEvent {
   isError?: boolean;
 }
 
+export interface ElectronAPI {
+  getSessions: () => Promise<ParsedSession[]>;
+  getSession: (id: string) => Promise<{ session: ParsedSession; messages: unknown[] } | null>;
+  onSessionUpdate: (callback: (data: ParsedSession) => void) => () => void;
+  getMcpServers: () => Promise<McpServer[]>;
+  toggleMcpServer: (id: string, enabled: boolean) => Promise<{ success: boolean; error?: string }>;
+  getSkills: () => Promise<Skill[]>;
+  getStats: (period: 'today' | 'week' | 'month' | 'all') => Promise<UsageStats>;
+  startChat: (projectPath: string) => Promise<void>;
+  sendMessage: (message: string) => Promise<void>;
+  onChatResponse: (callback: (data: ChatEvent) => void) => () => void;
+  onChatExit: (callback: (code: number) => void) => () => void;
+  stopChat: () => Promise<void>;
+}
+
 declare global {
   interface Window {
-    electronAPI: {
-      getSessions: () => Promise<ParsedSession[]>;
-      getSession: (id: string) => Promise<{ session: ParsedSession; messages: unknown[] } | null>;
-      onSessionUpdate: (callback: (data: ParsedSession) => void) => () => void;
-      getMcpServers: () => Promise<McpServer[]>;
-      toggleMcpServer: (id: string, enabled: boolean) => Promise<{ success: boolean; error?: string }>;
-      getSkills: () => Promise<Skill[]>;
-      getStats: (period: 'today' | 'week' | 'month' | 'all') => Promise<UsageStats>;
-      startChat: (projectPath: string) => Promise<void>;
-      sendMessage: (message: string) => Promise<void>;
-      onChatResponse: (callback: (data: ChatEvent) => void) => () => void;
-      onChatExit: (callback: (code: number) => void) => () => void;
-      stopChat: () => Promise<void>;
-    };
+    electronAPI?: ElectronAPI;
   }
 }
 
-export const electronAPI = window.electronAPI;
+// Check if running in Electron
+export const isElectron = typeof window !== 'undefined' && window.electronAPI !== undefined;
+
+// Mock API for browser development
+const mockAPI: ElectronAPI = {
+  getSessions: async () => [],
+  getSession: async () => null,
+  onSessionUpdate: () => () => {},
+  getMcpServers: async () => [],
+  toggleMcpServer: async () => ({ success: false, error: 'Not in Electron' }),
+  getSkills: async () => [],
+  getStats: async () => ({
+    totalCost: 0,
+    totalTokens: 0,
+    sessionCount: 0,
+    byModel: {},
+    byProject: [],
+    byDay: [],
+  }),
+  startChat: async () => {},
+  sendMessage: async () => {},
+  onChatResponse: () => () => {},
+  onChatExit: () => () => {},
+  stopChat: async () => {},
+};
+
+export const electronAPI: ElectronAPI = window.electronAPI ?? mockAPI;

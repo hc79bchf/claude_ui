@@ -3,6 +3,20 @@ import type { McpServer } from '../types/mcp';
 import type { Skill } from '../types/skill';
 import type { UsageStats } from '../types';
 
+const BACKEND_URL = import.meta.env.VITE_BACKEND_URL || 'http://localhost:3001';
+const WS_URL = BACKEND_URL.replace('http', 'ws');
+
+async function isBackendAvailable(): Promise<boolean> {
+  try {
+    const res = await fetch(`${BACKEND_URL}/api/health`, {
+      signal: AbortSignal.timeout(2000)
+    });
+    return res.ok;
+  } catch {
+    return false;
+  }
+}
+
 export interface ChatEvent {
   type: 'text' | 'tool_use' | 'tool_result' | 'thinking' | 'done' | 'error';
   content?: string;
@@ -255,5 +269,76 @@ const mockAPI: ElectronAPI = {
     chatExitCallback = null;
   },
 };
+
+const backendAPI: ElectronAPI = {
+  getSessions: async () => {
+    const res = await fetch(`${BACKEND_URL}/api/sessions`);
+    if (!res.ok) throw new Error('Failed to fetch sessions');
+    return res.json();
+  },
+  getSession: async (id: string) => {
+    const res = await fetch(`${BACKEND_URL}/api/sessions/${id}`);
+    if (!res.ok) return null;
+    return res.json();
+  },
+  onSessionUpdate: (callback) => {
+    const ws = new WebSocket(WS_URL);
+    ws.onopen = () => ws.send(JSON.stringify({ type: 'subscribe:sessions' }));
+    ws.onmessage = (e) => {
+      const msg = JSON.parse(e.data);
+      if (msg.type === 'session:update') {
+        callback(msg.session);
+      }
+    };
+    return () => ws.close();
+  },
+  getMcpServers: async () => {
+    const res = await fetch(`${BACKEND_URL}/api/mcp-servers`);
+    if (!res.ok) throw new Error('Failed to fetch MCP servers');
+    return res.json();
+  },
+  toggleMcpServer: async (id, enabled) => {
+    const res = await fetch(`${BACKEND_URL}/api/mcp-servers/${id}/toggle`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ enabled }),
+    });
+    return res.json();
+  },
+  getSkills: async () => {
+    const res = await fetch(`${BACKEND_URL}/api/skills`);
+    if (!res.ok) throw new Error('Failed to fetch skills');
+    return res.json();
+  },
+  getStats: async (period) => {
+    const res = await fetch(`${BACKEND_URL}/api/stats?period=${period}`);
+    if (!res.ok) throw new Error('Failed to fetch stats');
+    return res.json();
+  },
+  // Chat methods - these use WebSocket in the real implementation
+  startChat: async () => {},
+  sendMessage: async () => {},
+  onChatResponse: () => () => {},
+  onChatExit: () => () => {},
+  stopChat: async () => {},
+};
+
+let cachedAPI: ElectronAPI | null = null;
+
+export async function getAPI(): Promise<ElectronAPI> {
+  if (cachedAPI) return cachedAPI;
+
+  if (window.electronAPI) {
+    cachedAPI = window.electronAPI;
+  } else if (await isBackendAvailable()) {
+    console.log('Using backend API at', BACKEND_URL);
+    cachedAPI = backendAPI;
+  } else {
+    console.log('Using mock API (backend not available)');
+    cachedAPI = mockAPI;
+  }
+
+  return cachedAPI;
+}
 
 export const electronAPI: ElectronAPI = window.electronAPI ?? mockAPI;

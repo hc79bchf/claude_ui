@@ -28,12 +28,18 @@ router.get('/', async (req, res) => {
 // GET /api/sessions/:id - Get session details with messages
 router.get('/:id', async (req, res) => {
   try {
+    const sessionId = req.params.id;
+    // Basic validation - session IDs are UUIDs
+    if (!sessionId || !/^[a-f0-9-]+$/i.test(sessionId)) {
+      return res.status(400).json({ error: 'Invalid session ID format' });
+    }
+
     const claudeDir = path.join(os.homedir(), '.claude', 'projects');
     const sessionFiles = await glob(path.join(claudeDir, '**/*.jsonl'));
 
     for (const file of sessionFiles) {
       const session = sessionParser.parseSessionFile(file);
-      if (session && session.id === req.params.id) {
+      if (session && session.id === sessionId) {
         const messages = sessionParser.getSessionMessages(file);
         return res.json({ session, messages });
       }

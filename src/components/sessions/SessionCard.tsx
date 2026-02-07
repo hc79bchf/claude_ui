@@ -40,7 +40,7 @@ export function SessionCard({ session, onClick }: SessionCardProps) {
     .sort((a, b) => b[1] - a[1])
     .slice(0, 3);
 
-  const projectName = session.projectPath.split('/').pop() || session.projectPath;
+  const projectName = session.projectPath?.split('/').pop() || session.projectPath || 'Unknown';
 
   return (
     <button

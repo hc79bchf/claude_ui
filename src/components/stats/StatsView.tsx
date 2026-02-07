@@ -32,7 +32,8 @@ function formatDate(dateString: string): string {
   });
 }
 
-function getProjectName(path: string): string {
+function getProjectName(path: string | undefined | null): string {
+  if (!path) return 'Unknown';
   return path.split('/').pop() || path;
 }
 

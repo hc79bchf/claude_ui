@@ -7,6 +7,12 @@ export default defineConfig({
   base: './',
   build: {
     outDir: 'dist',
+    // Disable crossorigin for Electron file:// compatibility
+    rollupOptions: {
+      output: {
+        format: 'es',
+      },
+    },
   },
   resolve: {
     alias: {

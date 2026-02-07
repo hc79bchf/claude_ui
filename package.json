@@ -8,7 +8,8 @@
     "dev:vite": "vite",
     "dev:electron": "wait-on http://localhost:5173 && unset ELECTRON_RUN_AS_NODE && NODE_ENV=development electron .",
     "start": "unset ELECTRON_RUN_AS_NODE && electron .",
-    "build": "tsc -p tsconfig.electron.json && tsc -p tsconfig.node.json && vite build",
+    "build": "tsc -p tsconfig.electron.json && tsc -p tsconfig.node.json && vite build && npm run postbuild",
+    "postbuild": "sed -i '' 's/ crossorigin//g' dist/index.html",
     "build:electron": "npm run build && electron-builder",
     "preview": "vite preview",
     "test": "echo \"Error: no test specified\" && exit 1"

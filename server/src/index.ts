@@ -1,11 +1,12 @@
 import express from 'express';
 import cors from 'cors';
 import { createServer } from 'http';
-import { WebSocketServer, WebSocket } from 'ws';
+import { WebSocketServer } from 'ws';
 import sessionsRouter from './routes/sessions.js';
 import statsRouter from './routes/stats.js';
 import mcpRouter from './routes/mcp.js';
 import skillsRouter from './routes/skills.js';
+import { setupWebSocket } from './websocket/handler.js';
 
 const parsedPort = process.env.PORT ? parseInt(process.env.PORT, 10) : 3001;
 const PORT = isNaN(parsedPort) ? 3001 : parsedPort;
@@ -36,17 +37,7 @@ const server = createServer(app);
 // Create WebSocket server
 const wss = new WebSocketServer({ server });
 
-wss.on('connection', (ws: WebSocket) => {
-  console.log('WebSocket client connected');
-
-  ws.on('close', () => {
-    console.log('WebSocket client disconnected');
-  });
-
-  ws.on('error', (error: Error) => {
-    console.error('WebSocket error:', error);
-  });
-});
+setupWebSocket(wss);
 
 // Handle server errors
 server.on('error', (error: NodeJS.ErrnoException) => {

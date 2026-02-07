@@ -26,6 +26,18 @@ export interface ChatEvent {
   isError?: boolean;
 }
 
+export interface DirectoryEntry {
+  name: string;
+  path: string;
+  isDirectory: boolean;
+}
+
+export interface DirectoryListResult {
+  currentPath: string;
+  parentPath: string | null;
+  entries: DirectoryEntry[];
+}
+
 export interface ElectronAPI {
   getSessions: () => Promise<ParsedSession[]>;
   getSession: (id: string) => Promise<{ session: ParsedSession; messages: unknown[] } | null>;
@@ -34,6 +46,8 @@ export interface ElectronAPI {
   toggleMcpServer: (id: string, enabled: boolean) => Promise<{ success: boolean; error?: string }>;
   getSkills: () => Promise<Skill[]>;
   getStats: (period: 'today' | 'week' | 'month' | 'all') => Promise<UsageStats>;
+  listDirectory: (path?: string) => Promise<DirectoryListResult>;
+  getHomePath: () => Promise<string>;
   startChat: (projectPath: string) => Promise<void>;
   sendMessage: (message: string) => Promise<void>;
   onChatResponse: (callback: (data: ChatEvent) => void) => () => void;
@@ -226,6 +240,16 @@ const mockAPI: ElectronAPI = {
   },
   getSkills: async () => sampleSkills,
   getStats: async () => sampleStats,
+  listDirectory: async () => ({
+    currentPath: '/Users/demo',
+    parentPath: '/Users',
+    entries: [
+      { name: 'projects', path: '/Users/demo/projects', isDirectory: true },
+      { name: 'Documents', path: '/Users/demo/Documents', isDirectory: true },
+      { name: 'Desktop', path: '/Users/demo/Desktop', isDirectory: true },
+    ],
+  }),
+  getHomePath: async () => '/Users/demo',
   startChat: async () => {
     // Simulate chat connection
     setTimeout(() => {
@@ -314,6 +338,20 @@ const backendAPI: ElectronAPI = {
     const res = await fetch(`${BACKEND_URL}/api/stats?period=${period}`);
     if (!res.ok) throw new Error('Failed to fetch stats');
     return res.json();
+  },
+  listDirectory: async (path?: string) => {
+    const url = path
+      ? `${BACKEND_URL}/api/filesystem/list?path=${encodeURIComponent(path)}`
+      : `${BACKEND_URL}/api/filesystem/list`;
+    const res = await fetch(url);
+    if (!res.ok) throw new Error('Failed to list directory');
+    return res.json();
+  },
+  getHomePath: async () => {
+    const res = await fetch(`${BACKEND_URL}/api/filesystem/home`);
+    if (!res.ok) throw new Error('Failed to get home path');
+    const data = await res.json();
+    return data.path;
   },
   // Chat methods - these use WebSocket in the real implementation
   startChat: async () => {},

@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { useChat, ConnectionStatus } from '../../hooks/useChat';
 import { MessageBubble } from './MessageBubble';
 import { ChatInput } from './ChatInput';
+import { FolderPicker } from './FolderPicker';
 
 function ConnectionStatusIndicator({ status }: { status: ConnectionStatus }) {
   const statusConfig = {
@@ -40,6 +41,7 @@ interface ProjectSelectorProps {
 
 function ProjectSelector({ onSelect, disabled }: ProjectSelectorProps) {
   const [projectPath, setProjectPath] = useState('');
+  const [showFolderPicker, setShowFolderPicker] = useState(false);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -48,37 +50,69 @@ function ProjectSelector({ onSelect, disabled }: ProjectSelectorProps) {
     }
   };
 
+  const handleFolderSelect = (path: string) => {
+    setProjectPath(path);
+  };
+
   return (
-    <form onSubmit={handleSubmit} className="flex gap-2">
-      <input
-        type="text"
-        value={projectPath}
-        onChange={(e) => setProjectPath(e.target.value)}
-        placeholder="Enter project path (e.g., /Users/me/myproject)"
-        disabled={disabled}
-        className={`
-          flex-1 px-4 py-2 rounded-lg
-          bg-gray-700 border border-gray-600
-          text-gray-100 placeholder-gray-400
-          focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent
-          disabled:opacity-50 disabled:cursor-not-allowed
-        `}
+    <>
+      <form onSubmit={handleSubmit} className="flex gap-2">
+        <div className="flex-1 flex gap-2">
+          <input
+            type="text"
+            value={projectPath}
+            onChange={(e) => setProjectPath(e.target.value)}
+            placeholder="Enter project path (e.g., /Users/me/myproject)"
+            disabled={disabled}
+            className={`
+              flex-1 px-4 py-2 rounded-lg
+              bg-gray-700 border border-gray-600
+              text-gray-100 placeholder-gray-400
+              focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent
+              disabled:opacity-50 disabled:cursor-not-allowed
+            `}
+          />
+          <button
+            type="button"
+            onClick={() => setShowFolderPicker(true)}
+            disabled={disabled}
+            className={`
+              px-3 py-2 rounded-lg
+              bg-gray-700 border border-gray-600
+              text-gray-300 hover:text-white hover:bg-gray-600
+              focus:outline-none focus:ring-2 focus:ring-blue-500
+              disabled:opacity-50 disabled:cursor-not-allowed
+              transition-colors
+            `}
+            title="Browse folders"
+          >
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z" />
+            </svg>
+          </button>
+        </div>
+        <button
+          type="submit"
+          disabled={disabled || !projectPath.trim()}
+          className={`
+            px-4 py-2 rounded-lg
+            bg-blue-600 text-white
+            hover:bg-blue-500
+            focus:outline-none focus:ring-2 focus:ring-blue-500
+            disabled:opacity-50 disabled:cursor-not-allowed
+            transition-colors
+          `}
+        >
+          Connect
+        </button>
+      </form>
+
+      <FolderPicker
+        isOpen={showFolderPicker}
+        onClose={() => setShowFolderPicker(false)}
+        onSelect={handleFolderSelect}
       />
-      <button
-        type="submit"
-        disabled={disabled || !projectPath.trim()}
-        className={`
-          px-4 py-2 rounded-lg
-          bg-blue-600 text-white
-          hover:bg-blue-500
-          focus:outline-none focus:ring-2 focus:ring-blue-500
-          disabled:opacity-50 disabled:cursor-not-allowed
-          transition-colors
-        `}
-      >
-        Connect
-      </button>
-    </form>
+    </>
   );
 }
 

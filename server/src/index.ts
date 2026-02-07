@@ -6,6 +6,7 @@ import sessionsRouter from './routes/sessions.js';
 import statsRouter from './routes/stats.js';
 import mcpRouter from './routes/mcp.js';
 import skillsRouter from './routes/skills.js';
+import filesystemRouter from './routes/filesystem.js';
 import { setupWebSocket } from './websocket/handler.js';
 
 const parsedPort = process.env.PORT ? parseInt(process.env.PORT, 10) : 3001;
@@ -30,6 +31,7 @@ app.use('/api/sessions', sessionsRouter);
 app.use('/api/stats', statsRouter);
 app.use('/api/mcp-servers', mcpRouter);
 app.use('/api/skills', skillsRouter);
+app.use('/api/filesystem', filesystemRouter);
 
 // Create HTTP server
 const server = createServer(app);

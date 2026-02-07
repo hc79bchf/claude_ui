@@ -3,7 +3,8 @@ import cors from 'cors';
 import { createServer } from 'http';
 import { WebSocketServer, WebSocket } from 'ws';
 
-const PORT = process.env.PORT ? parseInt(process.env.PORT, 10) : 3001;
+const parsedPort = process.env.PORT ? parseInt(process.env.PORT, 10) : 3001;
+const PORT = isNaN(parsedPort) ? 3001 : parsedPort;
 
 const app = express();
 
@@ -32,9 +33,19 @@ wss.on('connection', (ws: WebSocket) => {
     console.log('WebSocket client disconnected');
   });
 
-  ws.on('error', (error) => {
+  ws.on('error', (error: Error) => {
     console.error('WebSocket error:', error);
   });
+});
+
+// Handle server errors
+server.on('error', (error: NodeJS.ErrnoException) => {
+  if (error.code === 'EADDRINUSE') {
+    console.error(`Port ${PORT} is already in use`);
+  } else {
+    console.error('Server error:', error);
+  }
+  process.exit(1);
 });
 
 // Start server

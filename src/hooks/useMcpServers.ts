@@ -1,21 +1,24 @@
 import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { electronAPI } from '../lib/electron';
+import { useApi } from './useApi';
 import type { McpServer } from '../types/mcp';
 
 export function useMcpServers() {
   const queryClient = useQueryClient();
+  const api = useApi();
   const [toggleError, setToggleError] = useState<string | null>(null);
   const [togglingId, setTogglingId] = useState<string | null>(null);
 
   const query = useQuery({
     queryKey: ['mcp-servers'],
-    queryFn: () => electronAPI.getMcpServers(),
+    queryFn: () => api!.getMcpServers(),
+    enabled: api !== null,
   });
 
   const toggleMutation = useMutation({
     mutationFn: async ({ id, enabled }: { id: string; enabled: boolean }) => {
-      const result = await electronAPI.toggleMcpServer(id, enabled);
+      if (!api) throw new Error('API not initialized');
+      const result = await api.toggleMcpServer(id, enabled);
       if (!result.success) {
         throw new Error(result.error || 'Failed to toggle server');
       }

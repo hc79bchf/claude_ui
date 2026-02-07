@@ -1,17 +1,20 @@
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useEffect } from 'react';
-import { electronAPI } from '../lib/electron';
+import { useApi } from './useApi';
 
 export function useSessions() {
   const queryClient = useQueryClient();
+  const api = useApi();
 
   const query = useQuery({
     queryKey: ['sessions'],
-    queryFn: () => electronAPI.getSessions(),
+    queryFn: () => api!.getSessions(),
+    enabled: api !== null,
   });
 
   useEffect(() => {
-    const cleanup = electronAPI.onSessionUpdate((updatedSession) => {
+    if (!api) return;
+    const cleanup = api.onSessionUpdate((updatedSession) => {
       queryClient.setQueryData(['sessions'], (old: unknown[] | undefined) => {
         if (!old) return [updatedSession];
         const index = old.findIndex((s: any) => s.id === updatedSession.id);
@@ -25,7 +28,7 @@ export function useSessions() {
     });
 
     return cleanup;
-  }, [queryClient]);
+  }, [queryClient, api]);
 
   return query;
 }

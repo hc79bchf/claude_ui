@@ -1,10 +1,13 @@
 import { useQuery } from '@tanstack/react-query';
-import { electronAPI } from '../lib/electron';
+import { useApi } from './useApi';
 
 export function useSkills() {
+  const api = useApi();
+
   const query = useQuery({
     queryKey: ['skills'],
-    queryFn: () => electronAPI.getSkills(),
+    queryFn: () => api!.getSkills(),
+    enabled: api !== null,
   });
 
   return {

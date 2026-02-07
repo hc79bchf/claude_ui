@@ -4,6 +4,7 @@ import { createServer } from 'http';
 import { WebSocketServer, WebSocket } from 'ws';
 import sessionsRouter from './routes/sessions.js';
 import statsRouter from './routes/stats.js';
+import mcpRouter from './routes/mcp.js';
 
 const parsedPort = process.env.PORT ? parseInt(process.env.PORT, 10) : 3001;
 const PORT = isNaN(parsedPort) ? 3001 : parsedPort;
@@ -25,6 +26,7 @@ app.get('/api/health', (_req, res) => {
 // Routes
 app.use('/api/sessions', sessionsRouter);
 app.use('/api/stats', statsRouter);
+app.use('/api/mcp-servers', mcpRouter);
 
 // Create HTTP server
 const server = createServer(app);

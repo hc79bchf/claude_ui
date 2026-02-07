@@ -12,7 +12,9 @@
     "postbuild": "sed -i '' 's/ crossorigin//g' dist/index.html",
     "build:electron": "npm run build && electron-builder",
     "preview": "vite preview",
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "dev:web": "concurrently \"cd server && npm run dev\" \"npm run dev\"",
+    "build:all": "npm run build && cd server && npm run build"
   },
   "repository": {
     "type": "git",

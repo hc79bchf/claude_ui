@@ -2,6 +2,7 @@ import express from 'express';
 import cors from 'cors';
 import { createServer } from 'http';
 import { WebSocketServer, WebSocket } from 'ws';
+import sessionsRouter from './routes/sessions.js';
 
 const parsedPort = process.env.PORT ? parseInt(process.env.PORT, 10) : 3001;
 const PORT = isNaN(parsedPort) ? 3001 : parsedPort;
@@ -19,6 +20,9 @@ app.get('/api/health', (_req, res) => {
     timestamp: new Date().toISOString()
   });
 });
+
+// Routes
+app.use('/api/sessions', sessionsRouter);
 
 // Create HTTP server
 const server = createServer(app);

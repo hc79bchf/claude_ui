@@ -2,66 +2,36 @@
 
 ## Prerequisites
 
-- Node.js 20+
 - Docker Desktop
-- Claude CLI installed and authenticated (`claude --version`)
+- Claude CLI authenticated on host (`claude --version`)
 
 ## Quick Start
 
-### 1. Start Backend (on host)
-
-The backend runs on your host machine to access Claude CLI with your subscription.
+### Start Dashboard
 
 ```bash
-cd server
-npm install
-npm run build
-npm start
+npm run docker:up
 ```
 
-Backend will be available at `http://localhost:3001`
-
-### 2. Start Frontend (Docker)
+Or directly:
 
 ```bash
-docker-compose up -d
+docker-compose up -d --build
 ```
 
-Frontend will be available at `http://localhost:8080`
+- Frontend: http://localhost:8080
+- Backend: http://localhost:3001
 
-## Development Mode
-
-### Backend (with hot reload)
+### Stop Dashboard
 
 ```bash
-cd server
-npm install
-npm run dev
+npm run docker:down
 ```
 
-### Frontend (with hot reload)
-
-```bash
-npm install
-npm run dev
-```
-
-Frontend dev server at `http://localhost:5173`
-
-## Stop Services
-
-### Stop Frontend (Docker)
+Or directly:
 
 ```bash
 docker-compose down
-```
-
-### Stop Backend
-
-Press `Ctrl+C` in the terminal running the backend, or:
-
-```bash
-pkill -f "node dist/index.js"
 ```
 
 ## Architecture
@@ -70,46 +40,90 @@ pkill -f "node dist/index.js"
 Browser (localhost:8080)
     │
     ▼
-Docker nginx (frontend)
-    │ proxy to host.docker.internal:3001
+Docker nginx (frontend container)
+    │ proxy /api and /ws to backend:3001
     ▼
-Host backend (Node.js + Express)
-    │ spawns
+Docker backend (Node.js container)
+    │ mounts ~/.claude for auth
+    │ spawns via expect
     ▼
-Claude CLI (with subscription auth)
+Claude CLI (uses host's Claude subscription)
+```
+
+## Container Details
+
+| Service | Container | Port | Image |
+|---------|-----------|------|-------|
+| Frontend | claude_ui-frontend-1 | 8080:80 | nginx:alpine |
+| Backend | claude_ui-backend-1 | 3001:3001 | node:20-alpine |
+
+## View Logs
+
+```bash
+# All containers
+docker-compose logs -f
+
+# Frontend only
+docker-compose logs -f frontend
+
+# Backend only
+docker-compose logs -f backend
+```
+
+## Rebuild After Changes
+
+```bash
+# Rebuild and restart
+docker-compose up -d --build
+
+# Force full rebuild (no cache)
+docker-compose build --no-cache
+docker-compose up -d
 ```
 
 ## Troubleshooting
 
+### Check container status
+
+```bash
+docker-compose ps
+```
+
 ### Backend not responding
 
 ```bash
-# Check if backend is running
+# Check health
 curl http://localhost:3001/api/health
 
-# Check logs
-cd server && npm start
+# Check backend logs
+docker-compose logs backend
 ```
 
 ### Frontend can't connect to backend
 
 ```bash
-# Verify Docker can reach host
-docker run --rm alpine ping -c 1 host.docker.internal
+# Check nginx config
+docker-compose exec frontend cat /etc/nginx/conf.d/default.conf
 
-# Rebuild frontend with new nginx config
+# Rebuild frontend
 docker-compose build frontend
-docker-compose up -d
+docker-compose up -d frontend
 ```
 
 ### Claude CLI not authenticated
 
-```bash
-# Check Claude CLI status
-claude --version
+The backend container mounts `~/.claude` from your host. Ensure Claude CLI is authenticated:
 
-# Re-authenticate if needed
-claude login
+```bash
+# On host machine
+claude --version
+claude login  # if needed
+```
+
+Then restart the backend container:
+
+```bash
+docker-compose restart backend
 ```
 
 ## API Endpoints
@@ -123,11 +137,21 @@ claude login
 | `GET /api/mcp-servers` | List MCP servers |
 | `GET /api/skills` | List available skills |
 | `GET /api/filesystem/list?path=...` | Browse directories |
-| `WS /` | WebSocket for chat |
+| `WS /ws` | WebSocket for chat |
+
+## Building for Production
+
+```bash
+# Build frontend and backend
+npm run build:all
+
+# Build Docker images
+docker-compose build
+```
 
 ## Environment Variables
 
 | Variable | Default | Description |
 |----------|---------|-------------|
-| `PORT` | `3001` | Backend port |
-| `NODE_ENV` | `development` | Environment mode |
+| `PORT` | `3001` | Backend port (in container) |
+| `NODE_ENV` | `production` | Environment mode |

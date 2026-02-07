@@ -1,11 +1,11 @@
 import { useEffect, useState } from 'react';
-import { getAPI, ElectronAPI } from '../lib/electron';
+import { getAPI, API } from '../lib/api';
 
-let globalApi: ElectronAPI | null = null;
-let apiPromise: Promise<ElectronAPI> | null = null;
+let globalApi: API | null = null;
+let apiPromise: Promise<API> | null = null;
 
 export function useApi() {
-  const [api, setApi] = useState<ElectronAPI | null>(globalApi);
+  const [api, setApi] = useState<API | null>(globalApi);
 
   useEffect(() => {
     if (globalApi) {

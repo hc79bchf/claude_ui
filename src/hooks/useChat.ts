@@ -1,5 +1,5 @@
 import { useState, useCallback, useEffect, useRef } from 'react';
-import { getAPI, ChatEvent, ElectronAPI } from '../lib/electron';
+import { getAPI, ChatEvent, API } from '../lib/api';
 
 export type ContentBlockType = 'text' | 'tool_use' | 'tool_result' | 'thinking';
 
@@ -56,7 +56,7 @@ export function useChat(): UseChatReturn {
   const [status, setStatus] = useState<ConnectionStatus>('disconnected');
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [api, setApi] = useState<ElectronAPI | null>(null);
+  const [api, setApi] = useState<API | null>(null);
 
   // Track the current assistant message being built
   const currentAssistantMessageRef = useRef<Message | null>(null);

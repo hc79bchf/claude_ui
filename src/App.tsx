@@ -7,7 +7,6 @@ import { ChatView } from './components/chat/ChatView';
 import { ToolsView } from './components/tools/ToolsView';
 import { SkillsView } from './components/skills/SkillsView';
 import { StatsView } from './components/stats/StatsView';
-import { isElectron } from './lib/electron';
 
 const queryClient = new QueryClient();
 
@@ -69,8 +68,6 @@ function PlaceholderView({ name }: { name: string }) {
 }
 
 export default function App() {
-  console.log('App rendering, isElectron:', isElectron);
-
   return (
     <ErrorBoundary>
       <QueryClientProvider client={queryClient}>

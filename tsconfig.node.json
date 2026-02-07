@@ -5,8 +5,7 @@
     "module": "ESNext",
     "moduleResolution": "bundler",
     "allowSyntheticDefaultImports": true,
-    "strict": true,
-    "outDir": "dist-electron"
+    "strict": true
   },
   "include": ["vite.config.ts"]
 }

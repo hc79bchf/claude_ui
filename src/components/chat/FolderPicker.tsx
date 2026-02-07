@@ -1,6 +1,6 @@
 import { useEffect, useState, useCallback } from 'react';
 import { useApi } from '../../hooks/useApi';
-import type { DirectoryEntry } from '../../lib/electron';
+import type { DirectoryEntry } from '../../lib/api';
 
 interface FolderPickerProps {
   isOpen: boolean;

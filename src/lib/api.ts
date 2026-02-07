@@ -1,15 +1,37 @@
-import type { ParsedSession } from '../../electron/services/types';
+import type { ParsedSession } from '../types/session';
 import type { McpServer } from '../types/mcp';
 import type { Skill } from '../types/skill';
 import type { UsageStats } from '../types';
 
-const BACKEND_URL = import.meta.env.VITE_BACKEND_URL || 'http://localhost:3001';
-const WS_URL = BACKEND_URL.replace('http', 'ws');
+// Detect backend URL based on how the app is being accessed
+function getBackendUrl(): string {
+  if (import.meta.env.VITE_BACKEND_URL) {
+    return import.meta.env.VITE_BACKEND_URL;
+  }
+  // If accessed through a different port (like Docker nginx), use relative URLs
+  if (typeof window !== 'undefined' && window.location.port !== '3001') {
+    return `${window.location.protocol}//${window.location.host}`;
+  }
+  return 'http://localhost:3001';
+}
 
-// Chat WebSocket state for backend API
+function getWsUrl(): string {
+  const backendUrl = getBackendUrl();
+  // If using relative URL (same host), use /ws path
+  if (typeof window !== 'undefined' && !backendUrl.includes(':3001')) {
+    const wsProtocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+    return `${wsProtocol}//${window.location.host}/ws`;
+  }
+  return backendUrl.replace('http', 'ws');
+}
+
+const BACKEND_URL = getBackendUrl();
+const WS_URL = getWsUrl();
+
+// Chat WebSocket state
 let chatWs: WebSocket | null = null;
-let backendChatResponseCallback: ((data: ChatEvent) => void) | null = null;
-let backendChatExitCallback: ((code: number) => void) | null = null;
+let chatResponseCallback: ((data: ChatEvent) => void) | null = null;
+let chatExitCallback: ((code: number) => void) | null = null;
 
 async function isBackendAvailable(): Promise<boolean> {
   try {
@@ -43,7 +65,7 @@ export interface DirectoryListResult {
   entries: DirectoryEntry[];
 }
 
-export interface ElectronAPI {
+export interface API {
   getSessions: () => Promise<ParsedSession[]>;
   getSession: (id: string) => Promise<{ session: ParsedSession; messages: unknown[] } | null>;
   onSessionUpdate: (callback: (data: ParsedSession) => void) => () => void;
@@ -60,16 +82,7 @@ export interface ElectronAPI {
   stopChat: () => Promise<void>;
 }
 
-declare global {
-  interface Window {
-    electronAPI?: ElectronAPI;
-  }
-}
-
-// Check if running in Electron
-export const isElectron = typeof window !== 'undefined' && window.electronAPI !== undefined;
-
-// Sample data for browser development testing
+// Sample data for development/demo mode when backend is unavailable
 const sampleSessions: ParsedSession[] = [
   {
     id: 'session-1',
@@ -97,19 +110,6 @@ const sampleSessions: ParsedSession[] = [
     skillsUsed: { 'superpowers:debugging': 3 },
     model: 'claude-opus-4-20250514',
   },
-  {
-    id: 'session-3',
-    slug: 'refactor-api-endpoints',
-    projectPath: '/Users/demo/projects/api-gateway',
-    gitBranch: 'feature/v2-api',
-    startedAt: new Date(Date.now() - 172800000).toISOString(),
-    lastActivityAt: new Date(Date.now() - 169200000).toISOString(),
-    messageCount: 65,
-    tokenUsage: { input: 22000, output: 12500, cacheRead: 5600, cacheCreation: 2200 },
-    toolsUsed: { Read: 25, Edit: 18, Bash: 10, Write: 8 },
-    skillsUsed: {},
-    model: 'claude-sonnet-4-20250514',
-  },
 ];
 
 const sampleMcpServers: McpServer[] = [
@@ -135,17 +135,6 @@ const sampleMcpServers: McpServer[] = [
     tools: ['create_issue', 'list_issues', 'create_pr', 'get_repo'],
     description: 'GitHub integration for issues and pull requests',
   },
-  {
-    id: 'postgres',
-    name: 'postgres',
-    type: 'stdio',
-    command: 'npx',
-    args: ['-y', '@anthropic/mcp-server-postgres'],
-    enabled: false,
-    source: 'project',
-    tools: ['query', 'execute', 'list_tables'],
-    description: 'PostgreSQL database queries',
-  },
 ];
 
 const sampleSkills: Skill[] = [
@@ -169,26 +158,6 @@ const sampleSkills: Skill[] = [
     usageCount: 42,
     lastUsedAt: new Date(Date.now() - 1800000),
   },
-  {
-    id: 'superpowers:debugging',
-    name: 'systematic-debugging',
-    plugin: 'superpowers',
-    path: '~/.claude/plugins/cache/superpowers/skills/debugging',
-    description: 'Systematic debugging workflow',
-    triggers: ['/debug', 'fix bug'],
-    usageCount: 8,
-    lastUsedAt: new Date(Date.now() - 86400000),
-  },
-  {
-    id: 'dev-browser:browse',
-    name: 'dev-browser',
-    plugin: 'dev-browser',
-    path: '~/.claude/plugins/cache/dev-browser/skills/browse',
-    description: 'Browser automation for testing',
-    triggers: ['/browse', 'test website'],
-    usageCount: 5,
-    lastUsedAt: new Date(Date.now() - 172800000),
-  },
 ];
 
 const sampleStats: UsageStats = {
@@ -202,26 +171,18 @@ const sampleStats: UsageStats = {
   byProject: [
     { path: '/Users/demo/projects/claude-dashboard', cost: 4.50, sessions: 5 },
     { path: '/Users/demo/projects/auth-service', cost: 3.20, sessions: 4 },
-    { path: '/Users/demo/projects/api-gateway', cost: 2.80, sessions: 3 },
-    { path: '/Users/demo/projects/frontend-app', cost: 1.95, sessions: 3 },
   ],
   byDay: [
-    { date: new Date(Date.now() - 6 * 86400000).toISOString().split('T')[0], cost: 1.20, tokens: 12000, sessions: 2 },
-    { date: new Date(Date.now() - 5 * 86400000).toISOString().split('T')[0], cost: 2.10, tokens: 21000, sessions: 3 },
-    { date: new Date(Date.now() - 4 * 86400000).toISOString().split('T')[0], cost: 1.85, tokens: 18500, sessions: 2 },
-    { date: new Date(Date.now() - 3 * 86400000).toISOString().split('T')[0], cost: 2.45, tokens: 24500, sessions: 3 },
     { date: new Date(Date.now() - 2 * 86400000).toISOString().split('T')[0], cost: 1.95, tokens: 19500, sessions: 2 },
     { date: new Date(Date.now() - 1 * 86400000).toISOString().split('T')[0], cost: 1.70, tokens: 17000, sessions: 2 },
     { date: new Date().toISOString().split('T')[0], cost: 1.20, tokens: 12500, sessions: 1 },
   ],
 };
 
-// Chat simulation state
-let chatResponseCallback: ((data: ChatEvent) => void) | null = null;
-let chatExitCallback: ((code: number) => void) | null = null;
+// Demo/mock API for when backend is unavailable
+let mockChatCallback: ((data: ChatEvent) => void) | null = null;
 
-// Mock API for browser development with sample data
-const mockAPI: ElectronAPI = {
+const mockAPI: API = {
   getSessions: async () => sampleSessions,
   getSession: async (id: string) => {
     const session = sampleSessions.find(s => s.id === id);
@@ -238,9 +199,7 @@ const mockAPI: ElectronAPI = {
   getMcpServers: async () => sampleMcpServers,
   toggleMcpServer: async (id, enabled) => {
     const server = sampleMcpServers.find(s => s.id === id);
-    if (server) {
-      server.enabled = enabled;
-    }
+    if (server) server.enabled = enabled;
     return { success: true };
   },
   getSkills: async () => sampleSkills,
@@ -251,55 +210,42 @@ const mockAPI: ElectronAPI = {
     entries: [
       { name: 'projects', path: '/Users/demo/projects', isDirectory: true },
       { name: 'Documents', path: '/Users/demo/Documents', isDirectory: true },
-      { name: 'Desktop', path: '/Users/demo/Desktop', isDirectory: true },
     ],
   }),
   getHomePath: async () => '/Users/demo',
   startChat: async () => {
-    // Simulate chat connection
     setTimeout(() => {
-      if (chatResponseCallback) {
-        chatResponseCallback({ type: 'text', content: 'Connected to Claude (Demo Mode)' });
+      if (mockChatCallback) {
+        mockChatCallback({ type: 'text', content: 'Connected to Claude (Demo Mode)' });
       }
     }, 500);
   },
   sendMessage: async (message: string) => {
-    // Simulate typing response
     setTimeout(() => {
-      if (chatResponseCallback) {
-        chatResponseCallback({ type: 'thinking', content: 'Analyzing your request...' });
+      if (mockChatCallback) {
+        mockChatCallback({ type: 'thinking', content: 'Analyzing your request...' });
       }
     }, 300);
-
-    // Simulate response
     setTimeout(() => {
-      if (chatResponseCallback) {
-        chatResponseCallback({
+      if (mockChatCallback) {
+        mockChatCallback({
           type: 'text',
-          content: `This is a demo response to: "${message}"\n\nIn the actual Electron app, this would connect to the Claude CLI and provide real responses.`,
+          content: `This is a demo response to: "${message}"\n\nConnect to the backend for real Claude responses.`,
         });
-        chatResponseCallback({ type: 'done' });
+        mockChatCallback({ type: 'done' });
       }
     }, 1500);
   },
   onChatResponse: (callback) => {
-    chatResponseCallback = callback;
-    return () => { chatResponseCallback = null; };
+    mockChatCallback = callback;
+    return () => { mockChatCallback = null; };
   },
-  onChatExit: (callback) => {
-    chatExitCallback = callback;
-    return () => { chatExitCallback = null; };
-  },
-  stopChat: async () => {
-    if (chatExitCallback) {
-      chatExitCallback(0);
-    }
-    chatResponseCallback = null;
-    chatExitCallback = null;
-  },
+  onChatExit: () => () => {},
+  stopChat: async () => { mockChatCallback = null; },
 };
 
-const backendAPI: ElectronAPI = {
+// Backend API implementation
+const backendAPI: API = {
   getSessions: async () => {
     const res = await fetch(`${BACKEND_URL}/api/sessions`);
     if (!res.ok) throw new Error('Failed to fetch sessions');
@@ -358,10 +304,8 @@ const backendAPI: ElectronAPI = {
     const data = await res.json();
     return data.path;
   },
-  // Chat methods using WebSocket
   startChat: async (projectPath: string) => {
     return new Promise<void>((resolve, reject) => {
-      // Close existing connection if any
       if (chatWs) {
         chatWs.close();
       }
@@ -373,22 +317,24 @@ const backendAPI: ElectronAPI = {
         resolve();
       };
 
-      chatWs.onerror = (err) => {
+      chatWs.onerror = () => {
         reject(new Error('WebSocket connection failed'));
       };
 
       chatWs.onmessage = (e) => {
+        console.log('[WS] Received message:', e.data);
         try {
           const msg = JSON.parse(e.data);
+          console.log('[WS] Parsed message:', msg.type, msg.content?.slice?.(0, 50));
           if (msg.type === 'chat:exit') {
-            if (backendChatExitCallback) {
-              backendChatExitCallback(msg.code);
+            if (chatExitCallback) {
+              chatExitCallback(msg.code);
             }
           } else if (msg.type.startsWith('chat:')) {
-            // Convert chat:text -> text, chat:error -> error, etc.
             const eventType = msg.type.replace('chat:', '');
-            if (backendChatResponseCallback) {
-              backendChatResponseCallback({
+            console.log('[WS] Calling callback for event:', eventType, 'hasCallback:', !!chatResponseCallback);
+            if (chatResponseCallback) {
+              chatResponseCallback({
                 type: eventType as ChatEvent['type'],
                 content: msg.content,
                 toolName: msg.toolName,
@@ -398,14 +344,14 @@ const backendAPI: ElectronAPI = {
               });
             }
           }
-        } catch {
-          // Ignore parse errors
+        } catch (err) {
+          console.error('[WS] Parse error:', err);
         }
       };
 
       chatWs.onclose = () => {
-        if (backendChatExitCallback) {
-          backendChatExitCallback(0);
+        if (chatExitCallback) {
+          chatExitCallback(0);
         }
         chatWs = null;
       };
@@ -419,12 +365,12 @@ const backendAPI: ElectronAPI = {
     }
   },
   onChatResponse: (callback) => {
-    backendChatResponseCallback = callback;
-    return () => { backendChatResponseCallback = null; };
+    chatResponseCallback = callback;
+    return () => { chatResponseCallback = null; };
   },
   onChatExit: (callback) => {
-    backendChatExitCallback = callback;
-    return () => { backendChatExitCallback = null; };
+    chatExitCallback = callback;
+    return () => { chatExitCallback = null; };
   },
   stopChat: async () => {
     if (chatWs) {
@@ -432,19 +378,17 @@ const backendAPI: ElectronAPI = {
       chatWs.close();
       chatWs = null;
     }
-    backendChatResponseCallback = null;
-    backendChatExitCallback = null;
+    chatResponseCallback = null;
+    chatExitCallback = null;
   },
 };
 
-let cachedAPI: ElectronAPI | null = null;
+let cachedAPI: API | null = null;
 
-export async function getAPI(): Promise<ElectronAPI> {
+export async function getAPI(): Promise<API> {
   if (cachedAPI) return cachedAPI;
 
-  if (window.electronAPI) {
-    cachedAPI = window.electronAPI;
-  } else if (await isBackendAvailable()) {
+  if (await isBackendAvailable()) {
     console.log('Using backend API at', BACKEND_URL);
     cachedAPI = backendAPI;
   } else {
@@ -455,4 +399,5 @@ export async function getAPI(): Promise<ElectronAPI> {
   return cachedAPI;
 }
 
-export const electronAPI: ElectronAPI = window.electronAPI ?? mockAPI;
+// Default export for immediate use (defaults to mock until getAPI is called)
+export const api: API = mockAPI;

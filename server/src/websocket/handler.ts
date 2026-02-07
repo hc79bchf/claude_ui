@@ -53,7 +53,8 @@ export function setupWebSocket(wss: WebSocketServer) {
             chatServices.set(ws, chat);
 
             chat.on('event', (event) => {
-              ws.send(JSON.stringify({ type: `chat:${event.type}`, ...event }));
+              const { type, ...rest } = event;
+              ws.send(JSON.stringify({ type: `chat:${type}`, ...rest }));
             });
 
             chat.on('exit', (code) => {

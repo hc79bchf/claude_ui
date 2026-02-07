@@ -3,16 +3,5 @@ services:
     build: .
     ports:
       - "8080:80"
-    depends_on:
-      - backend
-
-  backend:
-    build: ./server
-    ports:
-      - "3001:3001"
-    volumes:
-      - ~/.claude:/root/.claude:ro
-      - ~:/host-home:ro
-    environment:
-      - NODE_ENV=production
-      - HOST_HOME_PATH=/host-home
+    # Backend runs on host for Claude CLI subscription access
+    # Start backend manually: cd server && npm run dev

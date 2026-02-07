@@ -1,5 +1,5 @@
 import { useState, useCallback, useEffect, useRef } from 'react';
-import { electronAPI, ChatEvent } from '../lib/electron';
+import { getAPI, ChatEvent, ElectronAPI } from '../lib/electron';
 
 export type ContentBlockType = 'text' | 'tool_use' | 'tool_result' | 'thinking';
 
@@ -56,12 +56,19 @@ export function useChat(): UseChatReturn {
   const [status, setStatus] = useState<ConnectionStatus>('disconnected');
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [api, setApi] = useState<ElectronAPI | null>(null);
 
   // Track the current assistant message being built
   const currentAssistantMessageRef = useRef<Message | null>(null);
 
+  // Initialize API
+  useEffect(() => {
+    getAPI().then(setApi);
+  }, []);
+
   // Setup event listeners
   useEffect(() => {
+    if (!api) return;
     const handleChatResponse = (event: ChatEvent) => {
       switch (event.type) {
         case 'text': {
@@ -215,29 +222,33 @@ export function useChat(): UseChatReturn {
       }
     };
 
-    const cleanup1 = electronAPI.onChatResponse(handleChatResponse);
-    const cleanup2 = electronAPI.onChatExit(handleChatExit);
+    const cleanup1 = api.onChatResponse(handleChatResponse);
+    const cleanup2 = api.onChatExit(handleChatExit);
     return () => {
       cleanup1();
       cleanup2();
     };
-  }, []);
+  }, [api]);
 
   const startChat = useCallback(async (projectPath: string) => {
+    if (!api) {
+      setError('API not initialized');
+      return;
+    }
     setStatus('connecting');
     setError(null);
 
     try {
-      await electronAPI.startChat(projectPath);
+      await api.startChat(projectPath);
       setStatus('connected');
     } catch (err) {
       setStatus('error');
       setError(err instanceof Error ? err.message : 'Failed to start chat');
     }
-  }, []);
+  }, [api]);
 
   const sendMessage = useCallback(async (message: string) => {
-    if (!message.trim()) return;
+    if (!api || !message.trim()) return;
 
     // Add user message
     const userMessage: Message = {
@@ -252,23 +263,24 @@ export function useChat(): UseChatReturn {
     setError(null);
 
     try {
-      await electronAPI.sendMessage(message);
+      await api.sendMessage(message);
     } catch (err) {
       setIsLoading(false);
       setError(err instanceof Error ? err.message : 'Failed to send message');
     }
-  }, []);
+  }, [api]);
 
   const stopChat = useCallback(async () => {
+    if (!api) return;
     try {
-      await electronAPI.stopChat();
+      await api.stopChat();
       setStatus('disconnected');
       setIsLoading(false);
       currentAssistantMessageRef.current = null;
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to stop chat');
     }
-  }, []);
+  }, [api]);
 
   const clearMessages = useCallback(() => {
     setMessages([]);

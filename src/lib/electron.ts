@@ -6,6 +6,11 @@ import type { UsageStats } from '../types';
 const BACKEND_URL = import.meta.env.VITE_BACKEND_URL || 'http://localhost:3001';
 const WS_URL = BACKEND_URL.replace('http', 'ws');
 
+// Chat WebSocket state for backend API
+let chatWs: WebSocket | null = null;
+let backendChatResponseCallback: ((data: ChatEvent) => void) | null = null;
+let backendChatExitCallback: ((code: number) => void) | null = null;
+
 async function isBackendAvailable(): Promise<boolean> {
   try {
     const res = await fetch(`${BACKEND_URL}/api/health`, {
@@ -353,12 +358,83 @@ const backendAPI: ElectronAPI = {
     const data = await res.json();
     return data.path;
   },
-  // Chat methods - these use WebSocket in the real implementation
-  startChat: async () => {},
-  sendMessage: async () => {},
-  onChatResponse: () => () => {},
-  onChatExit: () => () => {},
-  stopChat: async () => {},
+  // Chat methods using WebSocket
+  startChat: async (projectPath: string) => {
+    return new Promise<void>((resolve, reject) => {
+      // Close existing connection if any
+      if (chatWs) {
+        chatWs.close();
+      }
+
+      chatWs = new WebSocket(WS_URL);
+
+      chatWs.onopen = () => {
+        chatWs!.send(JSON.stringify({ type: 'chat:start', projectPath }));
+        resolve();
+      };
+
+      chatWs.onerror = (err) => {
+        reject(new Error('WebSocket connection failed'));
+      };
+
+      chatWs.onmessage = (e) => {
+        try {
+          const msg = JSON.parse(e.data);
+          if (msg.type === 'chat:exit') {
+            if (backendChatExitCallback) {
+              backendChatExitCallback(msg.code);
+            }
+          } else if (msg.type.startsWith('chat:')) {
+            // Convert chat:text -> text, chat:error -> error, etc.
+            const eventType = msg.type.replace('chat:', '');
+            if (backendChatResponseCallback) {
+              backendChatResponseCallback({
+                type: eventType as ChatEvent['type'],
+                content: msg.content,
+                toolName: msg.toolName,
+                toolInput: msg.toolInput,
+                toolOutput: msg.toolOutput,
+                isError: msg.isError,
+              });
+            }
+          }
+        } catch {
+          // Ignore parse errors
+        }
+      };
+
+      chatWs.onclose = () => {
+        if (backendChatExitCallback) {
+          backendChatExitCallback(0);
+        }
+        chatWs = null;
+      };
+    });
+  },
+  sendMessage: async (message: string) => {
+    if (chatWs && chatWs.readyState === WebSocket.OPEN) {
+      chatWs.send(JSON.stringify({ type: 'chat:message', content: message }));
+    } else {
+      throw new Error('Chat not connected');
+    }
+  },
+  onChatResponse: (callback) => {
+    backendChatResponseCallback = callback;
+    return () => { backendChatResponseCallback = null; };
+  },
+  onChatExit: (callback) => {
+    backendChatExitCallback = callback;
+    return () => { backendChatExitCallback = null; };
+  },
+  stopChat: async () => {
+    if (chatWs) {
+      chatWs.send(JSON.stringify({ type: 'chat:stop' }));
+      chatWs.close();
+      chatWs = null;
+    }
+    backendChatResponseCallback = null;
+    backendChatExitCallback = null;
+  },
 };
 
 let cachedAPI: ElectronAPI | null = null;

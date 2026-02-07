@@ -116,6 +116,8 @@ export class CostService {
 
     return sessions.filter(session => {
       const sessionDate = new Date(session.lastActivityAt);
+      // Skip sessions with invalid dates
+      if (isNaN(sessionDate.getTime())) return false;
       return sessionDate >= cutoffDate;
     });
   }
@@ -155,13 +157,16 @@ export class CostService {
       projectStats.sessions += 1;
       byProjectMap.set(projectPath, projectStats);
 
-      // Aggregate by day
-      const dayKey = new Date(session.lastActivityAt).toISOString().split('T')[0];
-      const dayStats = byDayMap.get(dayKey) || { tokens: 0, cost: 0, sessions: 0 };
-      dayStats.tokens += tokens;
-      dayStats.cost += cost;
-      dayStats.sessions += 1;
-      byDayMap.set(dayKey, dayStats);
+      // Aggregate by day (skip sessions with invalid dates)
+      const sessionDate = new Date(session.lastActivityAt);
+      if (!isNaN(sessionDate.getTime())) {
+        const dayKey = sessionDate.toISOString().split('T')[0];
+        const dayStats = byDayMap.get(dayKey) || { tokens: 0, cost: 0, sessions: 0 };
+        dayStats.tokens += tokens;
+        dayStats.cost += cost;
+        dayStats.sessions += 1;
+        byDayMap.set(dayKey, dayStats);
+      }
     }
 
     // Convert maps to arrays and sort
